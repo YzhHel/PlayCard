@@ -14,7 +14,7 @@ CardViewSceneItem* CardViewSceneItem::create(int face, int suit) {
 }
 
 bool CardViewSceneItem::init(int face, int suit) {
-	if (!cocos2d::ui::Button::init()) return false;
+	if (!cocos2d::Node::init()) return false;
 	_face = face;
 	_suit = suit;
 	_clicked = 0;
@@ -29,12 +29,9 @@ bool CardViewSceneItem::init(int face, int suit) {
 	_background->setPosition(Vec2::ZERO); // 相对于Button中心
 	this->addChild(_background);
 
-	// 2. 关键设置：关闭自动适配 + 手动设置Button尺寸（保证点击区域）
-	this->ignoreContentAdaptWithSize(false);
+	// 2. 关键设置：关闭自动适配 + 手动设置Button尺寸（保证点击区域）	
 	Size bgSize = _background->getContentSize();
 	this->setContentSize(bgSize); // Button尺寸与背景一致
-	this->setTouchEnabled(true);
-	this->setEnabled(true);
 
 	// 3. 加载主点数精灵（居中）
 	std::string numPath = getFacePath(face);
@@ -85,26 +82,51 @@ bool CardViewSceneItem::init(int face, int suit) {
 		this->addChild(_suitSp);
 	}
 
-	// 点击事件
-	this->addClickEventListener([this](Ref* sender) {
-		_clicked = !_clicked; // 简化逻辑
-		setItemClicked(_clicked);
-		});
+	// ========== 核心：添加触摸点击事件（替代 Button 的点击） ==========
+   // 1. 创建单点触摸监听器
+	auto touchListener = EventListenerTouchOneByOne::create();
+
+	// 2. 设置是否吞噬触摸（避免透传到下层节点）
+	touchListener->setSwallowTouches(true);
+
+	// 3. 实现触摸开始事件（核心点击判断）
+	touchListener->onTouchBegan = [this](Touch* touch, Event* event) -> bool
+		{
+			// a. 获取当前节点的世界坐标系碰撞矩形
+			Rect boundingBox = this->getBoundingBox();
+
+			// b. 将触摸点转换为世界坐标系（和碰撞矩形匹配）
+			Vec2 touchWorldPos = touch->getLocation();
+
+			// c. 判断触摸点是否在卡牌范围内
+			if (boundingBox.containsPoint(touchWorldPos))
+			{
+				// d. 触发点击回调（和 Button 的点击逻辑一致）
+				if (_clickCallback)
+				{
+					if (_clicked == 0)
+						_clicked = 1;
+					else
+						_clicked = 0;
+					this->setItemClicked(_clicked); 
+					_clickCallback(); // 执行外部设置的回调
+				}
+				return true; // 返回true表示处理该触摸事件
+			}
+			return false; // 不在范围内，不处理
+		};
+
+	// 4. 将监听器添加到事件分发器（绑定到当前节点）
+	_eventDispatcher->addEventListenerWithSceneGraphPriority(touchListener, this);
+
 
 	return true;
 }
 
-void CardViewSceneItem::updateTouchSize(const Vec2& pos)
+// 替代 Button 的 addClickEventListener：设置外部回调
+void CardViewSceneItem::setClickCallback(const std::function<void()>& callback)
 {
-	// 确保 Button 有合适的内容尺寸，否则点击区域可能为零
-	//this->ignoreContentAdaptWithSize(false);
-	//Size bgSize = _background->getContentSize();
-	////Size thisSize = this->getContentSize();
-	//this->setContentSize(bgSize);
-	//this->setTouchEnabled(true);
-	//this->setEnabled(true);
-
-	_background->setPosition(Vec2::ZERO); // 相对于Button中心
+	_clickCallback = callback;
 }
 
 void CardViewSceneItem::setItemClicked(int isClicked)
@@ -112,20 +134,30 @@ void CardViewSceneItem::setItemClicked(int isClicked)
 	if (isClicked)
 	{
 		std::string tempPath = getRedFacePath(_face);
-		_numSp->setSpriteFrame(tempPath);
+		SpriteFrame* frame = SpriteFrameCache::getInstance()->getSpriteFrameByName(tempPath);
+		_numSp->setSpriteFrame(frame);
+
 		tempPath = getRedSmallFacePath(_face);
-		_numSpSmall->setSpriteFrame(tempPath);
-		tempPath = getRedSuitPath(_face);
-		_suitSp->setSpriteFrame(tempPath);
+		frame = SpriteFrameCache::getInstance()->getSpriteFrameByName(tempPath);
+		_numSpSmall->setSpriteFrame(frame);
+
+		tempPath = getRedSuitPath(_suit);
+		frame = SpriteFrameCache::getInstance()->getSpriteFrameByName(tempPath);
+		_suitSp->setSpriteFrame(frame);
 	}
 	else
 	{
 		std::string tempPath = getFacePath(_face);
-		_numSp->setSpriteFrame(tempPath);
+		SpriteFrame* frame = SpriteFrameCache::getInstance()->getSpriteFrameByName(tempPath);
+		_numSp->setSpriteFrame(frame);
+
 		tempPath = getSmallFacePath(_face);
-		_numSpSmall->setSpriteFrame(tempPath);
-		tempPath = getSuitPath(_face);
-		_suitSp->setSpriteFrame(tempPath);
+		frame = SpriteFrameCache::getInstance()->getSpriteFrameByName(tempPath);
+		_numSpSmall->setSpriteFrame(frame);
+
+		tempPath = getSuitPath(_suit);
+		frame = SpriteFrameCache::getInstance()->getSpriteFrameByName(tempPath);
+		_suitSp->setSpriteFrame(frame);
 	}
 }
 

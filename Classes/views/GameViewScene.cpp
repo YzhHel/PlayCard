@@ -81,7 +81,10 @@ bool GameViewScene::init()
                     if (card) {
                         card->setPosition(Vec2(x, y));
                         mainLayer->addChild(card);
-                        card->updateTouchSize(Vec2(x, y));
+                        // 设置点击回调（替代原来的 addClickEventListener）
+                        card->setClickCallback([card]() {
+                            
+                            });
                     }
                 }
             }
@@ -103,7 +106,12 @@ bool GameViewScene::init()
                     if (card) {
                         card->setPosition(Vec2(x + pileWidth/2.0f, y + pileHeight/2.0f));
                         pileLayer->addChild(card);
-                        card->updateTouchSize(Vec2(x + pileWidth / 2.0f, y + pileHeight / 2.0f));
+                        
+                        // 设置点击回调（替代原来的 addClickEventListener）
+                        card->setClickCallback([card]() {
+
+                            });
+
                     }
                 }
             }
