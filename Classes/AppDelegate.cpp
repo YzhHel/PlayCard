@@ -25,6 +25,7 @@
 #include "AppDelegate.h"
 #include "HelloWorldScene.h"
 #include "views/GameViewScene.h"
+#include "views/PlayCardMainViewScene.h"
 
 // #define USE_AUDIO_ENGINE 1
 // #define USE_SIMPLE_AUDIO_ENGINE 1
@@ -119,9 +120,10 @@ bool AppDelegate::applicationDidFinishLaunching() {
 #endif
     register_all_packages();
 
-    // create a scene. it's an autorelease object
+    // 入口：关卡选择界面；用户选关后通过 GameController::startGame(levelId) 进入游戏
     //auto scene = HelloWorld::createScene();
-    auto scene = GameViewScene::createScene();
+    //auto scene = GameViewScene::createScene();
+    auto scene = PlayCardMainViewScene::createScene();
 
     // run
     director->runWithScene(scene);

@@ -133,32 +133,31 @@ void CardViewSceneItem::setItemClicked(int isClicked)
 {
 	if (isClicked)
 	{
-		std::string tempPath = getRedFacePath(_face);
-		SpriteFrame* frame = SpriteFrameCache::getInstance()->getSpriteFrameByName(tempPath);
-		_numSp->setSpriteFrame(frame);
+		changeSpritePicture(_numSp, getRedFacePath(_face));
 
-		tempPath = getRedSmallFacePath(_face);
-		frame = SpriteFrameCache::getInstance()->getSpriteFrameByName(tempPath);
-		_numSpSmall->setSpriteFrame(frame);
+		changeSpritePicture(_numSpSmall, getRedSmallFacePath(_face));
 
-		tempPath = getRedSuitPath(_suit);
-		frame = SpriteFrameCache::getInstance()->getSpriteFrameByName(tempPath);
-		_suitSp->setSpriteFrame(frame);
+		changeSpritePicture(_suitSp, getRedSuitPath(_suit));
 	}
 	else
 	{
-		std::string tempPath = getFacePath(_face);
-		SpriteFrame* frame = SpriteFrameCache::getInstance()->getSpriteFrameByName(tempPath);
-		_numSp->setSpriteFrame(frame);
+		changeSpritePicture(_numSp, getFacePath(_face));
 
-		tempPath = getSmallFacePath(_face);
-		frame = SpriteFrameCache::getInstance()->getSpriteFrameByName(tempPath);
-		_numSpSmall->setSpriteFrame(frame);
+		changeSpritePicture(_numSpSmall, getSmallFacePath(_face));
 
-		tempPath = getSuitPath(_suit);
-		frame = SpriteFrameCache::getInstance()->getSpriteFrameByName(tempPath);
-		_suitSp->setSpriteFrame(frame);
+		changeSpritePicture(_suitSp, getSuitPath(_suit));
 	}
+}
+
+void CardViewSceneItem::changeSpritePicture(cocos2d::Sprite* sprite, std::string path)
+{	
+	Texture2D* newTexture = Director::getInstance()->getTextureCache()->addImage(path);
+
+	sprite->setTexture(newTexture); // 直接更新纹理
+	// 可选：重置 Sprite 大小为新图片的原始尺寸（如果需要）
+	sprite->setContentSize(newTexture->getContentSize());
+	// 可选：居中对齐纹理（避免偏移）
+	sprite->setTextureRect(Rect(0, 0, newTexture->getContentSize().width, newTexture->getContentSize().height));
 }
 
 std::string CardViewSceneItem::getFacePath(int face)

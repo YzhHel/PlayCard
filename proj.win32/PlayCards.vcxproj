@@ -151,9 +151,16 @@ xcopy "$(ProjectDir)..\Resources" "$(OutDir)" /D /E /I /F /Y
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\Classes\AppDelegate.cpp" />
+    <ClCompile Include="..\Classes\controller\GameController.cpp" />
+    <ClCompile Include="..\Classes\controller\GameModelFromLevelGenerator.cpp" />
+    <ClCompile Include="..\Classes\controller\LevelConfigLoader.cpp" />
+    <ClCompile Include="..\Classes\controller\PlayFieldController.cpp" />
+    <ClCompile Include="..\Classes\controller\StackController.cpp" />
     <ClCompile Include="..\Classes\HelloWorldScene.cpp" />
+    <ClCompile Include="..\Classes\manager\UndoManager.cpp" />
     <ClCompile Include="..\Classes\views\CardViewSceneItem.cpp" />
     <ClCompile Include="..\Classes\views\GameViewScene.cpp" />
+    <ClCompile Include="..\Classes\views\PlayCardMainViewScene.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -161,9 +168,16 @@ xcopy "$(ProjectDir)..\Resources" "$(OutDir)" /D /E /I /F /Y
     <ClInclude Include="..\Classes\configs\loaders\LevelConfigLoader.h" />
     <ClInclude Include="..\Classes\configs\models\CardResConfig.h" />
     <ClInclude Include="..\Classes\configs\models\LevelConfig.h" />
+    <ClInclude Include="..\Classes\controller\GameController.h" />
+    <ClInclude Include="..\Classes\controller\GameModelFromLevelGenerator.h" />
+    <ClInclude Include="..\Classes\controller\LevelConfigLoader.h" />
+    <ClInclude Include="..\Classes\controller\PlayFieldController.h" />
+    <ClInclude Include="..\Classes\controller\StackController.h" />
     <ClInclude Include="..\Classes\HelloWorldScene.h" />
+    <ClInclude Include="..\Classes\manager\UndoManager.h" />
     <ClInclude Include="..\Classes\views\CardViewSceneItem.h" />
     <ClInclude Include="..\Classes\views\GameViewScene.h" />
+    <ClInclude Include="..\Classes\views\PlayCardMainViewScene.h" />
     <ClInclude Include="main.h" />
   </ItemGroup>
   <ItemGroup>

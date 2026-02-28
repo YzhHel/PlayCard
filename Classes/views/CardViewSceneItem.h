@@ -15,6 +15,7 @@ public:
 	std::string getRedSuitPath(int suit);
 
 	void setItemClicked(int isClicked = 0);
+	void changeSpritePicture(cocos2d::Sprite* sprite, std::string path);
 
 	// 替代 Button 的 addClickEventListener：设置点击回调
 	void setClickCallback(const std::function<void()>& callback);
