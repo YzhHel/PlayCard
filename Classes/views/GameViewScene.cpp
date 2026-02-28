@@ -74,50 +74,47 @@ bool GameViewScene::initWithGameModel(const playcard::GameModel* model)
         const float pileH = _pileLayer->getContentSize().height;
         const float centerY = pileH / 2.0f;
 
-        // 目标：左边显示多余牌（除顶牌），右边只显示一张顶牌，并在顶牌右侧放“回退”按钮
-        // 为避免“挤”，把堆牌区划分成：左侧叠牌区域 + 右侧顶牌/按钮区域
-        const float leftRegionMinX = pileW * 0.12f;
-        const float leftRegionMaxX = pileW * 0.42f;
-        const float topCardX = pileW * 0.70f;
+        // 将堆牌区等分为 3 个区域：左（未显示的牌叠放）、中（顶牌）、右（回退按钮）
+        const float sectionWidth = pileW / 3.0f;
+        const float leftX   = sectionWidth * 0.5f;   // 左区中心
+        const float centerX = sectionWidth * 1.5f;   // 中区中心
+        const float rightX  = sectionWidth * 2.5f;   // 右区中心
 
         CardViewSceneItem* topCardNode = nullptr;
 
         const int n = static_cast<int>(stackPlacements.size());
-        const int extraCount = std::max(0, n - 1);
-        if (extraCount > 0) {
-            const float maxSpacing = 18.0f;
-            const float availableLeftWidth = std::max(0.0f, leftRegionMaxX - leftRegionMinX);
-            const float spacing = (extraCount <= 1) ? 0.0f : std::min(maxSpacing, availableLeftWidth / (extraCount - 1));
+        const int extraCount = std::max(0, n - 1); // 除去顶牌的数量
 
-            for (int i = 0; i < extraCount; ++i) {
-                const auto& c = stackPlacements[i];
-                auto card = CardViewSceneItem::create(c.cardFace, c.cardSuit);
-                if (!card) {
-                    continue;
-                }
-                card->setPosition(Vec2(leftRegionMinX + i * spacing, centerY));
-                card->setLocalZOrder(i);
-                _pileLayer->addChild(card);
-                card->setClickCallback([card]() {});
-                card->setIsShowUp(0);
+        // 1. 左侧：未显示的牌，全部重叠在同一个位置
+        for (int i = 0; i < extraCount; ++i) {
+            const auto& c = stackPlacements[i];
+            auto card = CardViewSceneItem::create(c.cardFace, c.cardSuit);
+            if (!card) {
+                continue;
             }
+
+            card->setPosition(Vec2(leftX, centerY));
+            card->setLocalZOrder(i);
+            _pileLayer->addChild(card);
+            card->setClickCallback([card]() {});
+            card->setIsShowUp(0); // 全部背面
         }
 
-        // 顶牌（最后一张）放右侧
+        // 2. 中间：顶牌（最后一张），居中显示
         {
             const auto& c = stackPlacements.back();
             auto card = CardViewSceneItem::create(c.cardFace, c.cardSuit);
             if (card) {
-                card->setPosition(Vec2(topCardX, centerY));
+                card->setPosition(Vec2(centerX, centerY));
                 card->setLocalZOrder(1000);
                 _pileLayer->addChild(card);
                 card->setClickCallback([card]() {});
-                card->setIsShowUp(1);
+                card->setIsShowUp(1); // 顶牌为明牌
                 topCardNode = card;
             }
         }
 
-        // 回退按钮：放在顶牌右侧
+        // 3. 右侧：回退按钮，居右区域中心
         if (topCardNode) {
             auto label = Label::createWithSystemFont("回退", "", 22);
             label->setTextColor(Color4B::WHITE);
@@ -129,12 +126,7 @@ bool GameViewScene::initWithGameModel(const playcard::GameModel* model)
             menu->setPosition(Vec2::ZERO);
             _pileLayer->addChild(menu, 2000);
 
-            const float cardW = topCardNode->getContentSize().width;
-            const float gap = 16.0f;
-            const float btnHalfW = item->getContentSize().width / 2.0f;
-            float btnX = topCardNode->getPositionX() + cardW / 2.0f + gap + btnHalfW;
-            btnX = std::min(btnX, pileW - btnHalfW - 12.0f);
-            item->setPosition(Vec2(btnX, topCardNode->getPositionY()));
+            item->setPosition(Vec2(rightX, centerY));
         }
     };
 
