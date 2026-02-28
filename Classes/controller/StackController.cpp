@@ -30,17 +30,15 @@ void StackController::initView(GameViewScene* gameView) {
     _topCard = nullptr;
     _undoItem = nullptr;
 
-    // 1. 根据堆牌区尺寸，重新计算三个槽位的坐标（与 GameViewScene::renderStack 保持一致）
+    // 1. 根据堆牌区尺寸，重新计算槽位坐标（与 GameViewScene::renderStack 保持一致）
     const float pileW = pileLayer->getContentSize().width;
     const float pileH = pileLayer->getContentSize().height;
     const float centerY = pileH / 2.0f;
     const float sectionWidth = pileW / 3.0f;
-    const float leftX   = sectionWidth * 0.5f;   // 左区中心
-    const float centerX = sectionWidth * 1.5f;   // 中区中心
-    // const float rightX  = sectionWidth * 2.5f; // 右区中心（仅用于按钮，不在此处记录）
 
-    _leftSlotPos   = Vec2(leftX, centerY);
-    _centerSlotPos = Vec2(centerX, centerY);
+    _fanBaseX   = pileW * 0.12f;   // 备用牌横向折叠起始 X
+    _fanOffsetX = 28.0f;           // 备用牌每张横向偏移
+    _centerSlotPos = Vec2(sectionWidth * 1.5f, centerY);
 
     // 2. 扫描堆牌区子节点，找出所有牌与回退按钮
     auto children = pileLayer->getChildren();
@@ -119,15 +117,19 @@ void StackController::onHiddenStackClicked() {
     newTop->stopAllActions();
     newTop->runAction(MoveTo::create(0.2f, _centerSlotPos));
 
-    // 记录撤销：将 newTop 从顶牌区域送回左侧备用堆
+    // 记录撤销：将 newTop 从顶牌区域送回左侧备用堆（横向折叠最右端）
     if (_undoManager) {
         _undoManager->pushUndoAction([this, oldTop, newTop]() {
             if (!newTop) {
                 return;
             }
 
+            // 备用牌横向折叠：新牌回到当前叠放最右端
+            float slotX = _fanBaseX + static_cast<float>(_hiddenCards.size()) * _fanOffsetX;
+            Vec2 slotPos(slotX, _centerSlotPos.y);
+
             newTop->stopAllActions();
-            newTop->runAction(MoveTo::create(0.2f, _leftSlotPos));
+            newTop->runAction(MoveTo::create(0.2f, slotPos));
 
             // 还原内部状态：oldTop 重新作为当前顶牌，newTop 回到备用堆
             _hiddenCards.push_back(newTop);

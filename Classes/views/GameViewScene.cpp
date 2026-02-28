@@ -8,10 +8,10 @@
 
 USING_NS_CC;
 
-#define MainCardArea_Width 540.0f
-#define MainCardArea_Height 750.0f
-#define CardDeckArea_Width 540.0f
-#define CardDeckArea_Height 290.0f
+#define MainCardArea_Width 1080.0f
+#define MainCardArea_Height 1500.0f
+#define CardDeckArea_Width 1080.0f
+#define CardDeckArea_Height 580.0f
 
 Scene* GameViewScene::createScene()
 {
@@ -74,10 +74,11 @@ bool GameViewScene::initWithGameModel(const playcard::GameModel* model)
         const float pileH = _pileLayer->getContentSize().height;
         const float centerY = pileH / 2.0f;
 
-        // 将堆牌区等分为 3 个区域：左（未显示的牌叠放）、中（顶牌）、右（回退按钮）
+        // 将堆牌区等分为 3 个区域：左（备用牌横向折叠）、中（顶牌）、右（回退按钮）
         const float sectionWidth = pileW / 3.0f;
-        const float leftX   = sectionWidth * 0.5f;   // 左区中心
-        const float centerX = sectionWidth * 1.5f;   // 中区中心
+        const float fanBaseX = pileW * 0.12f;       // 备用牌堆起始 X
+        const float fanOffsetX = 28.0f;             // 横向折叠时每张牌的偏移
+        const float centerX = sectionWidth * 1.5f;  // 中区中心
         const float rightX  = sectionWidth * 2.5f;   // 右区中心
 
         CardViewSceneItem* topCardNode = nullptr;
@@ -85,7 +86,7 @@ bool GameViewScene::initWithGameModel(const playcard::GameModel* model)
         const int n = static_cast<int>(stackPlacements.size());
         const int extraCount = std::max(0, n - 1); // 除去顶牌的数量
 
-        // 1. 左侧：未显示的牌，全部重叠在同一个位置
+        // 1. 左侧：备用牌，按齐牌用横向折叠显示（从左到右依次偏移）
         for (int i = 0; i < extraCount; ++i) {
             const auto& c = stackPlacements[i];
             auto card = CardViewSceneItem::create(c.cardFace, c.cardSuit);
@@ -93,7 +94,8 @@ bool GameViewScene::initWithGameModel(const playcard::GameModel* model)
                 continue;
             }
 
-            card->setPosition(Vec2(leftX, centerY));
+            float fanX = fanBaseX + static_cast<float>(i) * fanOffsetX;
+            card->setPosition(Vec2(fanX, centerY));
             card->setLocalZOrder(i);
             _pileLayer->addChild(card);
             card->setClickCallback([card]() {});
@@ -116,11 +118,12 @@ bool GameViewScene::initWithGameModel(const playcard::GameModel* model)
 
         // 3. 右侧：回退按钮，居右区域中心
         if (topCardNode) {
-            auto label = Label::createWithSystemFont("回退", "", 22);
+            auto label = Label::createWithSystemFont("回退", "", 36);
             label->setTextColor(Color4B::WHITE);
             auto item = MenuItemLabel::create(label, [](Ref*) {
                 CCLOG("Undo/Back clicked");
             });
+            item->setScale(1.5f);  // 放大按钮可点击区域
 
             auto menu = Menu::create(item, nullptr);
             menu->setPosition(Vec2::ZERO);

@@ -26,9 +26,10 @@ private:
     UndoManager* _undoManager = nullptr;
 
     // 手牌区布局与节点引用
-    std::vector<CardViewSceneItem*> _hiddenCards;  // 左侧叠放的手牌
+    std::vector<CardViewSceneItem*> _hiddenCards;  // 左侧备用牌（横向折叠）
     CardViewSceneItem* _topCard = nullptr;         // 中间显示的顶牌
-    cocos2d::Vec2 _leftSlotPos;                   // 左侧叠牌槽位置
+    float _fanBaseX = 0.0f;                        // 备用牌横向折叠起始 X
+    float _fanOffsetX = 28.0f;                     // 备用牌每张横向偏移
     cocos2d::Vec2 _centerSlotPos;                 // 中间顶牌槽位置
     cocos2d::MenuItemLabel* _undoItem = nullptr;  // 右侧回退按钮
 

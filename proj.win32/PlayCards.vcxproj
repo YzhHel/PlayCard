@@ -168,6 +168,7 @@ xcopy "$(ProjectDir)..\Resources" "$(OutDir)" /D /E /I /F /Y
     <ClInclude Include="..\Classes\AppDelegate.h" />
     <ClInclude Include="..\Classes\configs\loaders\LevelConfigLoader.h" />
     <ClInclude Include="..\Classes\configs\models\CardResConfig.h" />
+    <ClInclude Include="..\Classes\configs\models\GameModel.h" />
     <ClInclude Include="..\Classes\configs\models\LevelConfig.h" />
     <ClInclude Include="..\Classes\controller\GameController.h" />
     <ClInclude Include="..\Classes\controller\GameModelFromLevelGenerator.h" />

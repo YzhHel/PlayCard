@@ -122,6 +122,9 @@
     <ClInclude Include="..\Classes\views\PlayFieldView.h">
       <Filter>src\views</Filter>
     </ClInclude>
+    <ClInclude Include="..\Classes\configs\models\GameModel.h">
+      <Filter>config\models</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="game.rc">

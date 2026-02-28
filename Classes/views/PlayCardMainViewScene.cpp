@@ -11,10 +11,10 @@ namespace {
     std::unique_ptr<playcard::GameController> gGameController;
 }
 
-#define MainCardArea_Width 540.0f
-#define MainCardArea_Height 750.0f
-#define CardDeckArea_Width 540.0f
-#define CardDeckArea_Height 290.0f
+#define MainCardArea_Width 1080.0f
+#define MainCardArea_Height 1500.0f
+#define CardDeckArea_Width 1080.0f
+#define CardDeckArea_Height 580.0f
 
 Scene* PlayCardMainViewScene::createScene()
 {
@@ -74,16 +74,17 @@ void PlayCardMainViewScene::buildLevelSelectionUI()
     float cx = origin.x + visibleSize.width / 2.0f;
     float cy = origin.y + visibleSize.height / 2.0f;
 
-    auto label = Label::createWithSystemFont("Select Level", "", 28);
+    auto label = Label::createWithSystemFont("选择关卡", "", 48);
     label->setPosition(Vec2(cx, cy + 120.0f));
     this->addChild(label, 10);
 
     // 关卡按钮：1、2、3，点击时触发关卡选择事件
     for (int levelId = 1; levelId <= 3; ++levelId) {
         auto btn = Button::create();
-        btn->setTitleText("Level " + std::to_string(levelId));
-        btn->setTitleFontSize(22);
-        btn->setPosition(Vec2(cx - 120.0f + (levelId - 1) * 120.0f, cy));
+        btn->setTitleText("关卡 " + std::to_string(levelId));
+        btn->setTitleFontSize(40);
+        btn->setScale(1.5f);
+        btn->setPosition(Vec2(cx - 180.0f + (levelId - 1) * 180.0f, cy));
         btn->addClickEventListener([this, levelId](Ref*) {
             onLevelButtonClicked(levelId);
         });
