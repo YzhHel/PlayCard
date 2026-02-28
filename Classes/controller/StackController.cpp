@@ -196,15 +196,14 @@ void StackController::handlePlayfieldCardClick(int cardId) {
                 return;
             }
 
-            // 将 newTop（即 deskCard）从堆牌区移回主牌区原位置
-            Vec2 worldPosNow = pileLayer->convertToWorldSpace(deskCard->getPosition());
-            Vec2 posInMain = mainLayer->convertToNodeSpace(worldPosNow);
-
+            // 将 newTop（即 deskCard）从堆牌区移回主牌区
             deskCard->retain();
             pileLayer->removeChild(deskCard, false);
             mainLayer->addChild(deskCard);
             deskCard->release();
-            deskCard->setPosition(deskOriginalPos);
+            // 使用 MoveTo 反向平移回原始坐标（桌面坐标系）
+            deskCard->stopAllActions();
+            deskCard->runAction(MoveTo::create(0.2f, deskOriginalPos));
 
             // 原顶牌回到中槽
             oldTop->stopAllActions();
