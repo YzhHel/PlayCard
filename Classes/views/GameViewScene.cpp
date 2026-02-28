@@ -1,8 +1,10 @@
 #include "GameViewScene.h"
 #include "CardViewSceneItem.h"
+#include "PlayFieldView.h"
 #include "controller/PlayFieldController.h"
 #include "controller/StackController.h"
 #include "json/document.h"
+#include <algorithm>
 
 USING_NS_CC;
 
@@ -51,7 +53,7 @@ bool GameViewScene::initWithGameModel(const playcard::GameModel* model)
     float startY = origin.y + (visibleSize.height - (mainHeight + pileHeight)) / 2.0f;
 
     Color4B tanColor(210, 180, 140, 255);
-    _mainLayer = LayerColor::create(tanColor, mainWidth, mainHeight);
+    _mainLayer = PlayFieldView::create(tanColor, mainWidth, mainHeight);
     _mainLayer->setPosition(Vec2(startX, startY + pileHeight));
     this->addChild(_mainLayer, 1);
 
@@ -60,25 +62,96 @@ bool GameViewScene::initWithGameModel(const playcard::GameModel* model)
     _pileLayer->setPosition(Vec2(startX, startY));
     this->addChild(_pileLayer, 1);
 
-    if (_gameModel) {
-        for (const auto& c : _gameModel->playfield) {
-            auto card = CardViewSceneItem::create(c.cardFace, c.cardSuit);
-            if (card) {
-                card->setPosition(Vec2(c.position.x, c.position.y));
-                _mainLayer->addChild(card);
-                card->setClickCallback([card]() {});
-            }
+    auto renderStack = [&](const std::vector<playcard::CardPlacement>& stackPlacements) {
+        if (!_pileLayer) {
+            return;
         }
-        const float pileWidthHalf = pileWidth / 2.0f;
-        const float pileHeightHalf = pileHeight / 2.0f;
-        for (const auto& c : _gameModel->stack) {
-            auto card = CardViewSceneItem::create(c.cardFace, c.cardSuit);
-            if (card) {
-                card->setPosition(Vec2(c.position.x + pileWidthHalf, c.position.y + pileHeightHalf));
+        if (stackPlacements.empty()) {
+            return;
+        }
+
+        const float pileW = _pileLayer->getContentSize().width;
+        const float pileH = _pileLayer->getContentSize().height;
+        const float centerY = pileH / 2.0f;
+
+        // 目标：左边显示多余牌（除顶牌），右边只显示一张顶牌，并在顶牌右侧放“回退”按钮
+        // 为避免“挤”，把堆牌区划分成：左侧叠牌区域 + 右侧顶牌/按钮区域
+        const float leftRegionMinX = pileW * 0.12f;
+        const float leftRegionMaxX = pileW * 0.42f;
+        const float topCardX = pileW * 0.70f;
+
+        CardViewSceneItem* topCardNode = nullptr;
+
+        const int n = static_cast<int>(stackPlacements.size());
+        const int extraCount = std::max(0, n - 1);
+        if (extraCount > 0) {
+            const float maxSpacing = 18.0f;
+            const float availableLeftWidth = std::max(0.0f, leftRegionMaxX - leftRegionMinX);
+            const float spacing = (extraCount <= 1) ? 0.0f : std::min(maxSpacing, availableLeftWidth / (extraCount - 1));
+
+            for (int i = 0; i < extraCount; ++i) {
+                const auto& c = stackPlacements[i];
+                auto card = CardViewSceneItem::create(c.cardFace, c.cardSuit);
+                if (!card) {
+                    continue;
+                }
+                card->setPosition(Vec2(leftRegionMinX + i * spacing, centerY));
+                card->setLocalZOrder(i);
                 _pileLayer->addChild(card);
                 card->setClickCallback([card]() {});
+                card->setIsShowUp(0);
             }
         }
+
+        // 顶牌（最后一张）放右侧
+        {
+            const auto& c = stackPlacements.back();
+            auto card = CardViewSceneItem::create(c.cardFace, c.cardSuit);
+            if (card) {
+                card->setPosition(Vec2(topCardX, centerY));
+                card->setLocalZOrder(1000);
+                _pileLayer->addChild(card);
+                card->setClickCallback([card]() {});
+                card->setIsShowUp(1);
+                topCardNode = card;
+            }
+        }
+
+        // 回退按钮：放在顶牌右侧
+        if (topCardNode) {
+            auto label = Label::createWithSystemFont("回退", "", 22);
+            label->setTextColor(Color4B::WHITE);
+            auto item = MenuItemLabel::create(label, [](Ref*) {
+                CCLOG("Undo/Back clicked");
+            });
+
+            auto menu = Menu::create(item, nullptr);
+            menu->setPosition(Vec2::ZERO);
+            _pileLayer->addChild(menu, 2000);
+
+            const float cardW = topCardNode->getContentSize().width;
+            const float gap = 16.0f;
+            const float btnHalfW = item->getContentSize().width / 2.0f;
+            float btnX = topCardNode->getPositionX() + cardW / 2.0f + gap + btnHalfW;
+            btnX = std::min(btnX, pileW - btnHalfW - 12.0f);
+            item->setPosition(Vec2(btnX, topCardNode->getPositionY()));
+        }
+    };
+
+    if (_gameModel) {
+        auto playFieldView = dynamic_cast<PlayFieldView*>(_mainLayer);
+        if (playFieldView) {
+            for (int i = 0; i < static_cast<int>(_gameModel->playfield.size()); ++i) {
+                const auto& c = _gameModel->playfield[i];
+                auto card = CardViewSceneItem::create(c.cardFace, c.cardSuit);
+                if (card) {
+                    card->setPosition(Vec2(c.position.x, c.position.y));
+                    _mainLayer->addChild(card);
+                    playFieldView->registerCard(i, card);
+                }
+            }
+        }
+        renderStack(_gameModel->stack);
     } else {
         std::string cfgPath = "res/res/playfield.json";
         std::string raw;
@@ -91,6 +164,7 @@ bool GameViewScene::initWithGameModel(const playcard::GameModel* model)
             if (!doc.HasParseError() && doc.IsObject()) {
                 if (doc.HasMember("Playfield") && doc["Playfield"].IsArray()) {
                     const auto& arr = doc["Playfield"];
+                    auto playFieldView = dynamic_cast<PlayFieldView*>(_mainLayer);
                     for (rapidjson::SizeType i = 0; i < arr.Size(); ++i) {
                         const auto& it = arr[i];
                         int face = it.HasMember("CardFace") ? it["CardFace"].GetInt() : 0;
@@ -105,31 +179,26 @@ bool GameViewScene::initWithGameModel(const playcard::GameModel* model)
                         if (card) {
                             card->setPosition(Vec2(x, y));
                             _mainLayer->addChild(card);
-                            card->setClickCallback([card]() {});
+                            if (playFieldView) {
+                                playFieldView->registerCard(static_cast<int>(i), card);
+                            }
                         }
                     }
                 }
                 if (doc.HasMember("Stack") && doc["Stack"].IsArray()) {
                     const auto& arr = doc["Stack"];
-                    const float pileWidthHalf = pileWidth / 2.0f;
-                    const float pileHeightHalf = pileHeight / 2.0f;
+                    std::vector<playcard::CardPlacement> stackPlacements;
+                    stackPlacements.reserve(arr.Size());
                     for (rapidjson::SizeType i = 0; i < arr.Size(); ++i) {
                         const auto& it = arr[i];
                         int face = it.HasMember("CardFace") ? it["CardFace"].GetInt() : 0;
                         int suit = it.HasMember("CardSuit") ? it["CardSuit"].GetInt() : 0;
-                        float x = 0, y = 0;
-                        if (it.HasMember("Position") && it["Position"].IsObject()) {
-                            const auto& p = it["Position"];
-                            x = p.HasMember("x") ? p["x"].GetFloat() : 0;
-                            y = p.HasMember("y") ? p["y"].GetFloat() : 0;
-                        }
-                        auto card = CardViewSceneItem::create(face, suit);
-                        if (card) {
-                            card->setPosition(Vec2(x + pileWidthHalf, y + pileHeightHalf));
-                            _pileLayer->addChild(card);
-                            card->setClickCallback([card]() {});
-                        }
+                        playcard::CardPlacement c;
+                        c.cardFace = face;
+                        c.cardSuit = suit;
+                        stackPlacements.push_back(c);
                     }
+                    renderStack(stackPlacements);
                 }
             }
         }

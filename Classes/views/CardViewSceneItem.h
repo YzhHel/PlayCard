@@ -1,9 +1,10 @@
 #pragma once
 
 #include "cocos2d.h"
+#include "ui/CocosGUI.h"
 
 
-class CardViewSceneItem : public cocos2d::Node {
+class CardViewSceneItem : public cocos2d::ui::Button {
 public:
 	static CardViewSceneItem* create(int face, int suit);
 	bool init(int face, int suit);
@@ -15,22 +16,23 @@ public:
 	std::string getRedSuitPath(int suit);
 
 	void setItemClicked(int isClicked = 0);
-	void changeSpritePicture(cocos2d::Sprite* sprite, std::string path);
+	void changeSpritePicture(cocos2d::ui::ImageView* image, std::string path);
 
-	// 替代 Button 的 addClickEventListener：设置点击回调
+	// 封装 Button 的 addClickEventListener：设置点击回调
 	void setClickCallback(const std::function<void()>& callback);
-
+	// 设置是否显示卡面
+	void setIsShowUp(int isShowUp=0);
 private:
 	int _face;
 	int _suit;
 	int _clicked;
+	int _isShowUp;
 
-	cocos2d::Sprite* _background = nullptr;	//背景
-	cocos2d::Sprite* _numSp = nullptr;		//点数
-	cocos2d::Sprite* _numSpSmall = nullptr;	//小点数
-	cocos2d::Sprite* _suitSp = nullptr;		//花色
+	cocos2d::ui::ImageView* _numSp = nullptr;		//点数
+	cocos2d::ui::ImageView* _numSpSmall = nullptr;	//小点数
+	cocos2d::ui::ImageView* _suitSp = nullptr;		//花色
 
-	// 新增：点击回调函数对象
+	// 点击回调函数对象
 	std::function<void()> _clickCallback;
 };
 

@@ -69,6 +69,9 @@
     <ClCompile Include="..\Classes\views\PlayCardMainViewScene.cpp">
       <Filter>src\views</Filter>
     </ClCompile>
+    <ClCompile Include="..\Classes\views\PlayFieldView.cpp">
+      <Filter>src\views</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="main.h">
@@ -114,6 +117,9 @@
       <Filter>src\manager</Filter>
     </ClInclude>
     <ClInclude Include="..\Classes\views\PlayCardMainViewScene.h">
+      <Filter>src\views</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Classes\views\PlayFieldView.h">
       <Filter>src\views</Filter>
     </ClInclude>
   </ItemGroup>

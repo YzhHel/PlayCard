@@ -5,6 +5,8 @@
 #include "CardViewSceneItem.h"
 #include "configs/models/GameModel.h"
 
+class PlayFieldView;
+
 namespace playcard {
 class PlayFieldController;
 class StackController;

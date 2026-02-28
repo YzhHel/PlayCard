@@ -14,33 +14,28 @@ CardViewSceneItem* CardViewSceneItem::create(int face, int suit) {
 }
 
 bool CardViewSceneItem::init(int face, int suit) {
-	if (!cocos2d::Node::init()) return false;
+	if (!cocos2d::ui::Button::init()) return false;
 	_face = face;
 	_suit = suit;
 	_clicked = 0;
+	_isShowUp = 1;
 
-	// 1. 加载背景精灵（核心尺寸参考）
+	// 1. 设置 Button 背景纹理（作为牌的底图）
 	std::string strbk = "res/res/card_general.png";
-	_background = cocos2d::Sprite::create(strbk);
-	if (!_background) { // 增加空指针保护
-		return false;
-	}
-	_background->setAnchorPoint(Vec2(0.5f, 0.5f));
-	_background->setPosition(Vec2::ZERO); // 相对于Button中心
-	this->addChild(_background);
+	this->loadTextureNormal(strbk);
+	// 让 Button 大小跟随纹理尺寸，保证点击区域与牌面一致
+	this->ignoreContentAdaptWithSize(true);
+	Size bgSize = this->getContentSize();
 
-	// 2. 关键设置：关闭自动适配 + 手动设置Button尺寸（保证点击区域）	
-	Size bgSize = _background->getContentSize();
-	this->setContentSize(bgSize); // Button尺寸与背景一致
-
-	// 3. 加载主点数精灵（居中）
+	// 3. 加载主点数图片（居中，作为 Button 内容的一部分）
 	std::string numPath = getFacePath(face);
 	if (cocos2d::FileUtils::getInstance()->isFileExist(numPath)) {
-		_numSp = cocos2d::Sprite::create(numPath);
+		_numSp = cocos2d::ui::ImageView::create(numPath);
 	}
 	if (_numSp) {
 		_numSp->setAnchorPoint(Vec2(0.5f, 0.5f));
-		_numSp->setPosition(Vec2::ZERO); // 居中
+		// Button 的子节点坐标原点在左下角，这里用一半宽高居中
+		_numSp->setPosition(Vec2(bgSize.width / 2.0f, bgSize.height / 2.0f));
 		this->addChild(_numSp);
 	}
 	else {
@@ -50,75 +45,47 @@ bool CardViewSceneItem::init(int face, int suit) {
 		this->addChild(placeholder);
 	}
 
-	// 4. 加载左上角小点数精灵（统一坐标计算逻辑）
+	// 4. 加载左上角小点数图片（统一坐标计算逻辑）
 	std::string numSmallPath = getSmallFacePath(face);
 	if (cocos2d::FileUtils::getInstance()->isFileExist(numSmallPath)) {
-		_numSpSmall = cocos2d::Sprite::create(numSmallPath);
+		_numSpSmall = cocos2d::ui::ImageView::create(numSmallPath);
 	}
 	if (_numSpSmall) {
 		_numSpSmall->setAnchorPoint(Vec2(0.0f, 1.0f)); // 左上角锚点
 		const float marginLeft = 8.0f;
 		const float marginTop = 8.0f;
-		// 统一基于Button尺寸计算（Button锚点0.5,0.5，所以左上角坐标是 -bgSize.width/2, bgSize.height/2）
-		float posX = -bgSize.width / 2.0f + marginLeft;
-		float posY = bgSize.height / 2.0f - marginTop;
+		// Button 子节点坐标系左下为 (0,0)，右上为 (bgSize.width, bgSize.height)
+		float posX = marginLeft;
+		float posY = bgSize.height - marginTop;
 		_numSpSmall->setPosition(Vec2(posX, posY));
 		this->addChild(_numSpSmall);
 	}
 
-	// 5. 加载右上角花色精灵（统一坐标计算逻辑）
+	// 5. 加载右上角花色图片（统一坐标计算逻辑）
 	std::string suitPath = getSuitPath(suit);
 	if (cocos2d::FileUtils::getInstance()->isFileExist(suitPath)) {
-		_suitSp = cocos2d::Sprite::create(suitPath);
+		_suitSp = cocos2d::ui::ImageView::create(suitPath);
 	}
 	if (_suitSp) {
 		_suitSp->setAnchorPoint(Vec2(1.0f, 1.0f)); // 右上角锚点
 		const float marginRight = 8.0f;
 		const float marginTop = 8.0f;
-		// 统一基于Button尺寸计算
-		float posX = bgSize.width / 2.0f - marginRight;
-		float posY = bgSize.height / 2.0f - marginTop;
+		// 右上角：宽度减去右边距，高度减去上边距
+		float posX = bgSize.width - marginRight;
+		float posY = bgSize.height - marginTop;
 		_suitSp->setPosition(Vec2(posX, posY));
 		this->addChild(_suitSp);
 	}
 
-	// ========== 核心：添加触摸点击事件（替代 Button 的点击） ==========
-   // 1. 创建单点触摸监听器
-	auto touchListener = EventListenerTouchOneByOne::create();
-
-	// 2. 设置是否吞噬触摸（避免透传到下层节点）
-	touchListener->setSwallowTouches(true);
-
-	// 3. 实现触摸开始事件（核心点击判断）
-	touchListener->onTouchBegan = [this](Touch* touch, Event* event) -> bool
+	// 6. 使用 Button 自带的点击事件（addClickEventListener）
+	this->addClickEventListener([this](cocos2d::Ref* sender) {
+		if (_clickCallback)
 		{
-			// a. 获取当前节点的世界坐标系碰撞矩形
-			Rect boundingBox = this->getBoundingBox();
-
-			// b. 将触摸点转换为世界坐标系（和碰撞矩形匹配）
-			Vec2 touchWorldPos = touch->getLocation();
-
-			// c. 判断触摸点是否在卡牌范围内
-			if (boundingBox.containsPoint(touchWorldPos))
-			{
-				// d. 触发点击回调（和 Button 的点击逻辑一致）
-				if (_clickCallback)
-				{
-					if (_clicked == 0)
-						_clicked = 1;
-					else
-						_clicked = 0;
-					this->setItemClicked(_clicked); 
-					_clickCallback(); // 执行外部设置的回调
-				}
-				return true; // 返回true表示处理该触摸事件
-			}
-			return false; // 不在范围内，不处理
-		};
-
-	// 4. 将监听器添加到事件分发器（绑定到当前节点）
-	_eventDispatcher->addEventListenerWithSceneGraphPriority(touchListener, this);
-
+			_clicked = (_clicked == 0) ? 1 : 0;
+			this->setItemClicked(_clicked);
+			_clickCallback();
+		}
+	});
 
 	return true;
 }
@@ -131,6 +98,16 @@ void CardViewSceneItem::setClickCallback(const std::function<void()>& callback)
 
 void CardViewSceneItem::setItemClicked(int isClicked)
 {
+	if (_isShowUp == 0)
+	{
+		changeSpritePicture(_numSp, "");
+
+		changeSpritePicture(_numSpSmall, "");
+
+		changeSpritePicture(_suitSp, "");
+		return;
+	}
+
 	if (isClicked)
 	{
 		changeSpritePicture(_numSp, getRedFacePath(_face));
@@ -149,15 +126,28 @@ void CardViewSceneItem::setItemClicked(int isClicked)
 	}
 }
 
-void CardViewSceneItem::changeSpritePicture(cocos2d::Sprite* sprite, std::string path)
-{	
-	Texture2D* newTexture = Director::getInstance()->getTextureCache()->addImage(path);
+void CardViewSceneItem::setIsShowUp(int isShowUp)
+{
+	if (isShowUp == _isShowUp)
+		return;
+	_isShowUp = isShowUp;
+	setItemClicked(_clicked);
+}
 
-	sprite->setTexture(newTexture); // 直接更新纹理
-	// 可选：重置 Sprite 大小为新图片的原始尺寸（如果需要）
-	sprite->setContentSize(newTexture->getContentSize());
-	// 可选：居中对齐纹理（避免偏移）
-	sprite->setTextureRect(Rect(0, 0, newTexture->getContentSize().width, newTexture->getContentSize().height));
+void CardViewSceneItem::changeSpritePicture(cocos2d::ui::ImageView* image, std::string path)
+{
+	if (!image)
+		return;
+
+	// 空路径：视为隐藏该图片
+	if (path.empty())
+	{
+		image->setVisible(false);
+		return;
+	}
+
+	image->loadTexture(path);
+	image->setVisible(true);
 }
 
 std::string CardViewSceneItem::getFacePath(int face)

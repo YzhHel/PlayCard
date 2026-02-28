@@ -161,6 +161,7 @@ xcopy "$(ProjectDir)..\Resources" "$(OutDir)" /D /E /I /F /Y
     <ClCompile Include="..\Classes\views\CardViewSceneItem.cpp" />
     <ClCompile Include="..\Classes\views\GameViewScene.cpp" />
     <ClCompile Include="..\Classes\views\PlayCardMainViewScene.cpp" />
+    <ClCompile Include="..\Classes\views\PlayFieldView.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -178,6 +179,7 @@ xcopy "$(ProjectDir)..\Resources" "$(OutDir)" /D /E /I /F /Y
     <ClInclude Include="..\Classes\views\CardViewSceneItem.h" />
     <ClInclude Include="..\Classes\views\GameViewScene.h" />
     <ClInclude Include="..\Classes\views\PlayCardMainViewScene.h" />
+    <ClInclude Include="..\Classes\views\PlayFieldView.h" />
     <ClInclude Include="main.h" />
   </ItemGroup>
   <ItemGroup>
