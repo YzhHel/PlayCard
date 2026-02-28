@@ -24,7 +24,8 @@ private:
     void buildLevelSelectionUI();
 
     LevelSelectedCallback _onLevelSelected;
-    std::unique_ptr<playcard::GameController> _gameController;
+    // 注意：此指针不拥有 GameController，仅指向全局单例
+    playcard::GameController* _gameController = nullptr;
 };
 
 #endif // PLAYCARDMAINVIEWSCENE_H

@@ -17,9 +17,9 @@ void GameController::startGame(int levelId)
     _gameModel = std::make_unique<GameModel>(_gameModelGenerator.generateGameModel(levelId, levelConfig));
 
     // 3. 初始化各子控制器
-    _playFieldController.init(_gameModel.get());
-    _stackController.init(_gameModel.get());
     _undoManager.init(_gameModel.get());
+    _stackController.init(_gameModel.get(), &_undoManager);
+    _playFieldController.init(_gameModel.get(), &_stackController, &_undoManager);
 
     // 4. 创建 GameView 并添加到父节点
     GameViewScene* gameView = GameViewScene::createWithGameModel(_gameModel.get());

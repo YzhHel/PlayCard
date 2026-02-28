@@ -1,14 +1,18 @@
 #include "PlayFieldController.h"
+#include "StackController.h"
 #include "views/GameViewScene.h"
 #include "views/PlayFieldView.h"
+#include "manager/UndoManager.h"
 #include "cocos2d.h"
 
 USING_NS_CC;
 
 namespace playcard {
 
-void PlayFieldController::init(const GameModel* gameModel) {
+void PlayFieldController::init(const GameModel* gameModel, StackController* stackController, UndoManager* undoManager) {
     _gameModel = gameModel;
+    _stackController = stackController;
+    _undoManager = undoManager;
 }
 
 void PlayFieldController::initView(GameViewScene* gameView) {
@@ -26,17 +30,14 @@ void PlayFieldController::initView(GameViewScene* gameView) {
 }
 
 void PlayFieldController::handleCardClick(int cardId) {
-    // TODO: 检查 cardId 对应卡片是否满足移动条件（根据 _gameModel 规则）
-    // 目前先直接调用替换逻辑占位
-    replaceTrayWithPlayFieldCard(cardId);
+    // 桌面牌点击后，由 StackController 处理与手牌顶牌的匹配逻辑
+    if (_stackController) {
+        _stackController->handlePlayfieldCardClick(cardId);
+    }
 }
 
-void PlayFieldController::replaceTrayWithPlayFieldCard(int cardId) {
-    // TODO:
-    // - 记录撤销操作（通过 UndoManager）
-    // - 更新 _gameModel 中对应卡片位置/状态
-    // - 通过 _gameView 执行动画（从牌堆移到桌面等）
-    CCLOG("replaceTrayWithPlayFieldCard, cardId=%d", cardId);
+void PlayFieldController::replaceTrayWithPlayFieldCard(int /*cardId*/) {
+    // 逻辑已迁移到 StackController::handlePlayfieldCardClick
 }
 
 } // namespace playcard

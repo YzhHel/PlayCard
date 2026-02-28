@@ -1,6 +1,8 @@
 #pragma once
 
 #include "configs/models/GameModel.h"
+#include <functional>
+#include <vector>
 
 namespace playcard {
 
@@ -8,9 +10,19 @@ namespace playcard {
 class UndoManager {
 public:
     void init(const GameModel* gameModel);
-    // 可扩展：undo(), redo(), pushState() 等
+
+    /** 记录一条撤销操作（后进先出） */
+    void pushUndoAction(const std::function<void()>& action);
+
+    /** 撤销最近一次操作（如果有的话） */
+    void undoLast();
+
+    /** 是否还有可撤销的记录 */
+    bool canUndo() const;
+
 private:
     const GameModel* _gameModel = nullptr;
+    std::vector<std::function<void()>> _undoStack;
 };
 
 } // namespace playcard

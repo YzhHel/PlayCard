@@ -6,6 +6,11 @@
 USING_NS_CC;
 using namespace ui;
 
+// 全局持有一个 GameController，保证其生命周期覆盖整个游戏过程
+namespace {
+    std::unique_ptr<playcard::GameController> gGameController;
+}
+
 #define MainCardArea_Width 540.0f
 #define MainCardArea_Height 750.0f
 #define CardDeckArea_Width 540.0f
@@ -24,7 +29,12 @@ bool PlayCardMainViewScene::init()
         return false;
     }
 
-    _gameController = std::make_unique<playcard::GameController>();
+    // 初始化全局 GameController 单例（如尚未创建）
+    if (!gGameController) {
+        gGameController = std::make_unique<playcard::GameController>();
+    }
+    _gameController = gGameController.get();
+
     setLevelSelectedCallback([this](int levelId) {
         if (_gameController) {
             _gameController->startGame(levelId);

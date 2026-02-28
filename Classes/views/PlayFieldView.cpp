@@ -37,5 +37,23 @@ void PlayFieldView::registerCard(int cardId, CardViewSceneItem* card)
             _onCardClickCallback(cardId);
         }
     });
+    _cards[cardId] = card;
+}
+
+CardViewSceneItem* PlayFieldView::getCardNode(int cardId) const
+{
+    auto it = _cards.find(cardId);
+    if (it != _cards.end()) {
+        return it->second;
+    }
+    return nullptr;
+}
+
+void PlayFieldView::unregisterCard(int cardId)
+{
+    auto it = _cards.find(cardId);
+    if (it != _cards.end()) {
+        _cards.erase(it);
+    }
 }
 

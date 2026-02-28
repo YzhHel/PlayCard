@@ -15,6 +15,10 @@ public:
 	std::string getRedSmallFacePath(int face);
 	std::string getRedSuitPath(int suit);
 
+	// 读取当前牌面的点数与花色
+	int getFace() const { return _face; }
+	int getSuit() const { return _suit; }
+
 	void setItemClicked(int isClicked = 0);
 	void changeSpritePicture(cocos2d::ui::ImageView* image, std::string path);
 
