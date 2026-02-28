@@ -78,7 +78,37 @@ bool CardViewSceneItem::init(int face, int suit) {
 	}
 
 	// 6. 使用 Button 自带的点击事件（addClickEventListener）
+	//    增加限制：只有在同一堆中“处于最上层（绘制顺序最后、且有重叠）”的牌才能响应点击
 	this->addClickEventListener([this](cocos2d::Ref* sender) {
+		// 顶牌判断：在所有与本牌发生矩形重叠的 CardViewSceneItem 中，
+		// 只有“绘制顺序在最后”的那一张才算顶牌
+		cocos2d::Node* parent = this->getParent();
+		if (parent)
+		{
+			cocos2d::Rect selfBB = this->getBoundingBox();
+
+			CardViewSceneItem* topCard = nullptr;
+			const auto& children = parent->getChildren();
+			for (auto child : children)
+			{
+				auto otherCard = dynamic_cast<CardViewSceneItem*>(child);
+				if (!otherCard) continue;
+
+				// 只关心与本牌有重叠的牌
+				if (!selfBB.intersectsRect(otherCard->getBoundingBox())) continue;
+
+				// children 的遍历顺序与绘制顺序一致，后遍历到的视为“更上层”
+				topCard = otherCard;
+			}
+
+			// 如果找到了与本牌重叠的“顶牌”，且不是自己，则本牌不响应点击
+			if (topCard && topCard != this)
+			{
+				return;
+			}
+		}
+
+		// 通过顶牌检查后，才真正触发点击逻辑
 		if (_clickCallback)
 		{
 			_clicked = (_clicked == 0) ? 1 : 0;
