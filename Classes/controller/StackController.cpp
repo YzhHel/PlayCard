@@ -30,7 +30,19 @@ void StackController::initView(GameViewScene* gameView) {
     _topCard = nullptr;
     _undoItem = nullptr;
 
-    // 1. 扫描堆牌区子节点，找出所有牌与回退按钮
+    // 1. 根据堆牌区尺寸，重新计算三个槽位的坐标（与 GameViewScene::renderStack 保持一致）
+    const float pileW = pileLayer->getContentSize().width;
+    const float pileH = pileLayer->getContentSize().height;
+    const float centerY = pileH / 2.0f;
+    const float sectionWidth = pileW / 3.0f;
+    const float leftX   = sectionWidth * 0.5f;   // 左区中心
+    const float centerX = sectionWidth * 1.5f;   // 中区中心
+    // const float rightX  = sectionWidth * 2.5f; // 右区中心（仅用于按钮，不在此处记录）
+
+    _leftSlotPos   = Vec2(leftX, centerY);
+    _centerSlotPos = Vec2(centerX, centerY);
+
+    // 2. 扫描堆牌区子节点，找出所有牌与回退按钮
     auto children = pileLayer->getChildren();
     std::vector<CardViewSceneItem*> allCards;
     for (auto child : children) {
@@ -49,7 +61,7 @@ void StackController::initView(GameViewScene* gameView) {
         return;
     }
 
-    // 2. 以 X 坐标最大者作为当前顶牌，其余为左侧叠牌
+    // 3. 以 X 坐标最大者作为当前顶牌，其余为左侧叠牌
     _topCard = allCards.front();
     for (auto c : allCards) {
         if (c->getPositionX() > _topCard->getPositionX()) {
@@ -63,18 +75,10 @@ void StackController::initView(GameViewScene* gameView) {
         }
     }
 
-    if (!_hiddenCards.empty()) {
-        _leftSlotPos = _hiddenCards.front()->getPosition();
-    } else if (_topCard) {
-        // 没有隐藏牌时，左槽暂时与顶牌重合
-        _leftSlotPos = _topCard->getPosition();
-    }
-    if (_topCard) {
-        _centerSlotPos = _topCard->getPosition();
-    }
-
-    // 3. 重新绑定交互：左侧叠牌点击 -> 翻牌；回退按钮 -> 撤销
+    // 4. 重新绑定交互：左侧叠牌点击 -> 翻牌；回退按钮 -> 撤销
     for (auto c : _hiddenCards) {
+        // 备用牌：不需要“顶牌限制”，点击任意一张都直接翻到顶牌位置
+        c->setEnforceTopMost(false);
         c->setClickCallback([this]() {
             this->onHiddenStackClicked();
         });
@@ -88,7 +92,8 @@ void StackController::initView(GameViewScene* gameView) {
 }
 
 void StackController::onHiddenStackClicked() {
-    if (!_topCard || _hiddenCards.empty()) {
+    // 备用牌堆为空则无操作
+    if (_hiddenCards.empty()) {
         return;
     }
 
@@ -96,39 +101,41 @@ void StackController::onHiddenStackClicked() {
     CardViewSceneItem* newTop = _hiddenCards.back();
     CardViewSceneItem* oldTop = _topCard;
 
-    if (!newTop || !oldTop || newTop == oldTop) {
+    if (!newTop) {
         return;
     }
 
-    // 前向操作：newTop 从左槽移到中槽，oldTop 从中槽移到左槽
+    // 前向操作：newTop 从左槽移到中槽，覆盖在当前顶牌之上；
+    // 旧顶牌隐藏，仅保留为“历史顶牌”以便撤销时恢复
     _hiddenCards.pop_back();
-    _hiddenCards.push_back(oldTop);
     _topCard = newTop;
 
+    if (oldTop) {
+        oldTop->setVisible(false);
+    }
+    newTop->setVisible(true);
+    // 需求：翻到顶牌后正面朝上
+    newTop->setIsShowUp(1);
     newTop->stopAllActions();
-    oldTop->stopAllActions();
     newTop->runAction(MoveTo::create(0.2f, _centerSlotPos));
-    oldTop->runAction(MoveTo::create(0.2f, _leftSlotPos));
 
-    // 记录撤销：再次交换回来
+    // 记录撤销：将 newTop 从顶牌区域送回左侧备用堆
     if (_undoManager) {
         _undoManager->pushUndoAction([this, oldTop, newTop]() {
-            if (!oldTop || !newTop) {
+            if (!newTop) {
                 return;
             }
 
             newTop->stopAllActions();
-            oldTop->stopAllActions();
             newTop->runAction(MoveTo::create(0.2f, _leftSlotPos));
-            oldTop->runAction(MoveTo::create(0.2f, _centerSlotPos));
 
-            // 还原内部状态：oldTop 重新成为顶牌
-            auto it = std::find(_hiddenCards.begin(), _hiddenCards.end(), oldTop);
-            if (it != _hiddenCards.end()) {
-                _hiddenCards.erase(it);
-            }
+            // 还原内部状态：oldTop 重新作为当前顶牌，newTop 回到备用堆
             _hiddenCards.push_back(newTop);
             _topCard = oldTop;
+
+            if (oldTop) {
+                oldTop->setVisible(true);
+            }
         });
     }
 }
@@ -176,14 +183,15 @@ void StackController::handlePlayfieldCardClick(int cardId) {
     deskCard->release();
     deskCard->setPosition(startPosInPile);
 
-    // 前向动画：桌面牌飞到中槽，原顶牌飞到左槽
+    // 前向动画：桌面牌飞到中槽，覆盖在当前顶牌之上（顶牌区域为叠放容器）
     deskCard->stopAllActions();
-    oldTop->stopAllActions();
     deskCard->runAction(MoveTo::create(0.2f, _centerSlotPos));
-    oldTop->runAction(MoveTo::create(0.2f, _leftSlotPos));
 
-    // 更新内部手牌状态
-    _hiddenCards.push_back(oldTop);
+    // 更新当前顶牌指针与可见性：旧顶牌隐藏，新顶牌显示
+    if (oldTop) {
+        oldTop->setVisible(false);
+    }
+    newTop->setVisible(true);
     _topCard = newTop;
 
     // 桌面视图不再响应这张牌的点击
@@ -205,16 +213,11 @@ void StackController::handlePlayfieldCardClick(int cardId) {
             deskCard->stopAllActions();
             deskCard->runAction(MoveTo::create(0.2f, deskOriginalPos));
 
-            // 原顶牌回到中槽
-            oldTop->stopAllActions();
-            oldTop->runAction(MoveTo::create(0.2f, _centerSlotPos));
-
-            // 更新内部手牌状态
-            auto it = std::find(_hiddenCards.begin(), _hiddenCards.end(), oldTop);
-            if (it != _hiddenCards.end()) {
-                _hiddenCards.erase(it);
-            }
+            // 撤销匹配：恢复旧顶牌为当前顶牌并重新显示
             _topCard = oldTop;
+            if (oldTop) {
+                oldTop->setVisible(true);
+            }
 
             // 重新在桌面注册该牌的点击
             mainLayer->registerCard(cardId, deskCard);

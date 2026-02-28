@@ -20,6 +20,12 @@ bool CardViewSceneItem::init(int face, int suit) {
 	_clicked = 0;
 	_isShowUp = 1;
 
+	bool bRed = false;
+	if (_suit == CardSuitType::CST_HEARTS || _suit == CardSuitType::CST_DIAMONDS)
+	{
+		bRed = true;
+	}
+
 	// 1. 设置 Button 背景纹理（作为牌的底图）
 	std::string strbk = "res/res/card_general.png";
 	this->loadTextureNormal(strbk);
@@ -28,7 +34,8 @@ bool CardViewSceneItem::init(int face, int suit) {
 	Size bgSize = this->getContentSize();
 
 	// 3. 加载主点数图片（居中，作为 Button 内容的一部分）
-	std::string numPath = getFacePath(face);
+	std::string numPath = bRed? getRedFacePath(face): getFacePath(face);
+
 	if (cocos2d::FileUtils::getInstance()->isFileExist(numPath)) {
 		_numSp = cocos2d::ui::ImageView::create(numPath);
 	}
@@ -46,7 +53,7 @@ bool CardViewSceneItem::init(int face, int suit) {
 	}
 
 	// 4. 加载左上角小点数图片（统一坐标计算逻辑）
-	std::string numSmallPath = getSmallFacePath(face);
+	std::string numSmallPath = bRed ? getRedSmallFacePath(face) : getSmallFacePath(face); 
 	if (cocos2d::FileUtils::getInstance()->isFileExist(numSmallPath)) {
 		_numSpSmall = cocos2d::ui::ImageView::create(numSmallPath);
 	}
@@ -62,7 +69,7 @@ bool CardViewSceneItem::init(int face, int suit) {
 	}
 
 	// 5. 加载右上角花色图片（统一坐标计算逻辑）
-	std::string suitPath = getSuitPath(suit);
+	std::string suitPath = bRed ? getRedSuitPath(suit) : getSuitPath(suit);
 	if (cocos2d::FileUtils::getInstance()->isFileExist(suitPath)) {
 		_suitSp = cocos2d::ui::ImageView::create(suitPath);
 	}
@@ -78,37 +85,41 @@ bool CardViewSceneItem::init(int face, int suit) {
 	}
 
 	// 6. 使用 Button 自带的点击事件（addClickEventListener）
-	//    增加限制：只有在同一堆中“处于最上层（绘制顺序最后、且有重叠）”的牌才能响应点击
+	//    可选限制：只有在同一堆中“处于最上层（绘制顺序最后、且有重叠）”的牌才能响应点击
 	this->addClickEventListener([this](cocos2d::Ref* sender) {
-		// 顶牌判断：在所有与本牌发生矩形重叠的 CardViewSceneItem 中，
-		// 只有“绘制顺序在最后”的那一张才算顶牌
-		cocos2d::Node* parent = this->getParent();
-		if (parent)
+		// 顶牌限制：根据需要可关闭
+		if (_enforceTopMost)
 		{
-			cocos2d::Rect selfBB = this->getBoundingBox();
-
-			CardViewSceneItem* topCard = nullptr;
-			const auto& children = parent->getChildren();
-			for (auto child : children)
+			// 在所有与本牌发生矩形重叠的 CardViewSceneItem 中，
+			// 只有“绘制顺序在最后”的那一张才算顶牌
+			cocos2d::Node* parent = this->getParent();
+			if (parent)
 			{
-				auto otherCard = dynamic_cast<CardViewSceneItem*>(child);
-				if (!otherCard) continue;
+				cocos2d::Rect selfBB = this->getBoundingBox();
 
-				// 只关心与本牌有重叠的牌
-				if (!selfBB.intersectsRect(otherCard->getBoundingBox())) continue;
+				CardViewSceneItem* topCard = nullptr;
+				const auto& children = parent->getChildren();
+				for (auto child : children)
+				{
+					auto otherCard = dynamic_cast<CardViewSceneItem*>(child);
+					if (!otherCard) continue;
 
-				// children 的遍历顺序与绘制顺序一致，后遍历到的视为“更上层”
-				topCard = otherCard;
-			}
+					// 只关心与本牌有重叠的牌
+					if (!selfBB.intersectsRect(otherCard->getBoundingBox())) continue;
 
-			// 如果找到了与本牌重叠的“顶牌”，且不是自己，则本牌不响应点击
-			if (topCard && topCard != this)
-			{
-				return;
+					// children 的遍历顺序与绘制顺序一致，后遍历到的视为“更上层”
+					topCard = otherCard;
+				}
+
+				// 如果找到了与本牌重叠的“顶牌”，且不是自己，则本牌不响应点击
+				if (topCard && topCard != this)
+				{
+					return;
+				}
 			}
 		}
 
-		// 通过顶牌检查后，才真正触发点击逻辑
+		// 通过顶牌检查后（或不启用该检查），才真正触发点击逻辑
 		if (_clickCallback)
 		{
 			_clicked = (_clicked == 0) ? 1 : 0;
@@ -138,7 +149,7 @@ void CardViewSceneItem::setItemClicked(int isClicked)
 		return;
 	}
 
-	if (isClicked)
+	if (_suit == CardSuitType::CST_HEARTS || _suit == CardSuitType::CST_DIAMONDS)
 	{
 		changeSpritePicture(_numSp, getRedFacePath(_face));
 
@@ -147,13 +158,13 @@ void CardViewSceneItem::setItemClicked(int isClicked)
 		changeSpritePicture(_suitSp, getRedSuitPath(_suit));
 	}
 	else
-	{
+	{		
 		changeSpritePicture(_numSp, getFacePath(_face));
 
 		changeSpritePicture(_numSpSmall, getSmallFacePath(_face));
 
 		changeSpritePicture(_suitSp, getSuitPath(_suit));
-	}
+	}		
 }
 
 void CardViewSceneItem::setIsShowUp(int isShowUp)
