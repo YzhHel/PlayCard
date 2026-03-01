@@ -13,8 +13,8 @@
 ## 技术栈
 
 - **引擎**：Cocos2d-x (C++)
-- **平台**：Windows (Win32)
-- **构建**：Visual Studio (v143 工具集)
+- **平台**：Windows (Win32)、Android
+- **构建**：Visual Studio (Win32)、Gradle + NDK (Android)
 
 ## 项目结构
 
@@ -23,10 +23,12 @@ PlayCards/
 ├── Classes/
 │   ├── AppDelegate.cpp/h          # 应用入口，启动关卡选择场景
 │   ├── HelloWorldScene.cpp/h      # 示例场景（未使用）
-│   ├── configs/models/           # 数据模型
-│   │   ├── CardResConfig.h
-│   │   ├── GameModel.h
-│   │   └── LevelConfig.h
+│   ├── configs/
+│   │   ├── PlatformLayoutConfig.h # 平台布局配置（Android/Windows 竖屏差异）
+│   │   └── models/               # 数据模型
+│   │       ├── CardResConfig.h
+│   │       ├── GameModel.h
+│   │       └── LevelConfig.h
 │   ├── controller/               # 控制器
 │   │   ├── GameController        # 游戏总控：关卡加载、视图创建、子控制器初始化
 │   │   ├── PlayFieldController   # 主牌区点击与匹配分发
@@ -40,16 +42,19 @@ PlayCards/
 │       ├── GameViewScene         # 游戏主界面（主牌区 + 堆牌区）
 │       ├── PlayFieldView         # 主牌区视图
 │       └── CardViewSceneItem     # 单张牌视图
-├── res/res/
-│   ├── playfield.json            # 默认关卡配置
-│   └── level_1.json, level_2.json, level_3.json  # 各关卡配置（可选）
+├── Resources/                    # 资源目录（Android 打包来源）
+│   └── res/res/
+│       ├── playfield.json       # 默认关卡配置
+│       ├── card_general.png      # 牌面资源
+│       └── ...                  # 牌面、花色等图片
 ├── proj.win32/                   # Visual Studio 工程
+├── proj.android/                 # Android Gradle 工程
 └── cocos2d/                      # Cocos2d-x 引擎
 ```
 
 ## 关卡配置
 
-关卡配置为 JSON 格式，路径：`res/res/level_{id}.json`，若不存在则回退到 `playfield.json`。
+关卡配置为 JSON 格式，路径：`Resources/res/res/level_{id}.json`，若不存在则回退到 `playfield.json`。Android 构建时会将 `Resources/` 下的文件复制到 APK 的 assets 中。
 
 示例结构：
 
@@ -72,26 +77,28 @@ PlayCards/
 
 ## 构建与运行
 
-### 环境要求
+### Windows
 
-- Windows
-- Visual Studio 2019 或更高版本（含 C++ 桌面开发工作负载）
-- Cocos2d-x 已包含在项目 `cocos2d/` 目录中
+**环境要求**：Visual Studio 2019 或更高版本（含 C++ 桌面开发工作负载）
 
-### 构建步骤
-
-1. 使用 Visual Studio 打开 `proj.win32\PlayCards.sln`（或直接打开 `proj.win32\PlayCards.vcxproj`）
+1. 打开 `proj.win32\PlayCards.sln`
 2. 选择 **Debug** 或 **Release** 配置
 3. 生成解决方案（Ctrl+Shift+B）
+4. 运行 `PlayCards.exe`（在 `Debug.win32/` 或 `Release.win32/` 目录，需将 `res` 设为工作目录）
 
-### 运行
+### Android
 
-1. 将 `res` 目录设置为工作目录，或确保可执行文件运行时能访问 `res/res/` 下的资源
-2. 运行生成的 `PlayCards.exe`（通常在 `Debug.win32/` 或 `Release.win32/` 目录）
+**环境要求**：Android Studio、Android NDK、JDK
+
+1. 进入 `proj.android` 目录
+2. 执行 `gradlew assembleDebug`（或使用 Android Studio 打开工程并 Run）
+3. 生成的 APK 位于 `app/build/outputs/apk/debug/`
+
+**说明**：Android 为强制竖屏，布局通过 `PlatformLayoutConfig.h` 针对竖屏做了适配（设计分辨率、备用牌堆位置等）。
 
 ## 设计分辨率
 
-- 设计分辨率：1080 × 2080
+- 设计分辨率：1080 × 2080（竖屏）
 - 主牌区：1080 × 1500
 - 堆牌区：1080 × 580
 
