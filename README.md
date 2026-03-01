@@ -108,6 +108,6 @@ PlayCards/
 
 ## 部分环境搭建及学习链接
 
-Cocos2dx-3.17环境搭建：[Cocos2d-x - 成熟、轻量、开放的跨平台解决方案](https://www.cocos.com/cocos2d-x)
-基础学习参考视频：https://www.bilibili.com/video/BV1JosjeKEfe/?spm_id_from=333.788.videopod.episodes&vd_source=c590a3b8520857cec1c87b81e3a21a2a
-安卓打包流程参考博客：https://blog.csdn.net/qq_40283426/article/details/104859185
+1. Cocos2dx-3.17环境搭建：[Cocos2d-x - 成熟、轻量、开放的跨平台解决方案](https://www.cocos.com/cocos2d-x)
+2. 基础学习参考视频：https://www.bilibili.com/video/BV1JosjeKEfe/?spm_id_from=333.788.videopod.episodes&vd_source=c590a3b8520857cec1c87b81e3a21a2a
+3. 安卓打包流程参考博客：https://blog.csdn.net/qq_40283426/article/details/104859185
